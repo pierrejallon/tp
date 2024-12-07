@@ -1,0 +1,9 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: win-64
+numpy=1.23.2
+pip=22.1.2
+pyqtgraph=0.12.4
+pyside2
+python=3.10.4
+scipy

@@ -1,0 +1,21 @@
+# Modes of the board enumeration
+MODE_ACQUISITION = 1
+MODE_GENERATION = 2
+MODE_ACQUISITION_GENERATION = 3
+
+# Sampling frequency of the signal enumeration
+FREQUENCY_100HZ = 0
+FREQUENCY_500HZ = 1
+FREQUENCY_1KHZ = 2
+FREQUENCY_2KHZ = 3
+FREQUENCY_10KHZ = 4
+
+# Filters applied to the signal enumeration
+FILTER_50HZ = 1
+FILTER_250HZ = 2
+FILTER_500HZ = 3
+FILTER_1KHZ = 4
+FILTER_5KHZ = 5
+NO_FILTER = 6
+
+VALUE_0V = 32768
