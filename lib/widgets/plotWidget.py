@@ -72,8 +72,8 @@ class plotWidget(QWidget):
     def addDataArray(self,values):
         # # time management
         l = len(values[0])
-        if l > len(self.time):
-            l = len(self.time) - 1
+        if l > len(self.time)-1:
+            l = len(self.time) - 2
             for (ic,c) in enumerate(self.curves):
                 values[ic] = values[ic][-l:]
         self.time[:-l] = self.time[l:]   

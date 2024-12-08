@@ -152,7 +152,7 @@ class cardAcqui():
         samples[1][0] = ch1
         samples[2][0] = ch2
         samples[3][0] = ch3
-        # self.add_samples_to_fifo(samples)
+        self.add_samples_to_fifo(samples)
         return
 
     def sendBurst(self,ch0,ch1,ch2,ch3):
@@ -161,7 +161,7 @@ class cardAcqui():
         samples[1] = ch1
         samples[2] = ch2
         samples[3] = ch3
-        # self.add_samples_to_fifo(samples)
+        self.add_samples_to_fifo(samples)
         return
 
     ###############
@@ -321,6 +321,11 @@ class cardAcqui():
         c_s = [((value / (V_MAX * GAIN) * (VREF_PLUS - VREF_MINUS)) - VREF_MEDIUM) * SIGNAL_COEFF for value in samples]
         return c_s
 
+    def VoltToCounts(self,v):
+        # print(samples)
+        c_s = [((value / SIGNAL_COEFF + VREF_MEDIUM) * (V_MAX * GAIN) / (VREF_PLUS - VREF_MINUS))  for value in v]
+        return c_s
+    
     ###############
     # internal for data generation
     ###############
@@ -360,7 +365,8 @@ class cardAcqui():
                 used_channels.append(i)
                 # channel_samples[i] = filters[i](list(samples[INDEX_CH_IN_1]), list(samples[INDEX_CH_IN_2]))
                 ### Check here ? Convert values to byte ? 
-                channel_samples[i] = samples[i]
+
+                channel_samples[i] = self.VoltToCounts(samples[i])
                 if channel_samples[i] == [] and not self.single_info_message:
                     print('Warning : With current acquired data and filters, channel ' + str(i+1)
                         + ' does not have output data')
@@ -406,6 +412,35 @@ class cardAcqui():
         channels_out = [True,True,True,True]
         payload: list[int] = self.build_payload(samples, channels_out)
         self.__add_payload(payload)
+
+    def __generation_init(self,sampling_frequency_index: int, channels_out: list[bool], generation_only: bool = True) :
+
+        channels_count = 0
+        for c in channels_out:
+            if c:
+                channels_count += 1
+
+        sampling_frequency = FREQUENCIES_FROM_INDEX[sampling_frequency_index]
+
+        payload_len = PAYLOAD_LEN_BY_FREQUENCY_FOR_ACQUISITION_GENERATION
+        # if not generation_only:
+        #     payload_len = PAYLOAD_LEN_BY_FREQUENCY_FOR_ACQUISITION_GENERATION
+        # else:
+        #     payload_len = PAYLOAD_LEN_BY_FREQUENCY_FOR_GENERATION_ONLY[sampling_frequency_index]
+        generation_loop_duration = payload_len/(channels_count*sampling_frequency*DATA_CONVERSION_COEFF)
+        return payload_len, generation_loop_duration, channels_count, sampling_frequency
+
+    def __send_entire_fifo(self):
+        if not self.fifo_mutex.acquire():
+            return
+        try:
+            rest = len(self.fifo)%64
+            self.serGene.write(self.fifo[:len(self.fifo)-rest])
+            self.fifo = self.fifo[len(self.fifo)-rest:]
+        except Exception:
+            print('timeout !')
+        finally:
+            self.fifo_mutex.release()
 
     ###############
     # Acquisition functions
@@ -453,27 +488,44 @@ class cardAcqui():
             self.geneTh.join()
 
     def __do_runGene(self):
-        # # PAYLOAD_LENS_BY_FREQUENCY = [48, 254, 510, 1022, 2046]
-        # PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
-        # ch0 = []
-        # ch1 = []
-        # used_channels = 2
-        # payload_len = (PAYLOAD_LENS_BY_FREQUENCY[self.sampling_frequency_index]+2)*(4*used_channels)
-        # # print("{}-{}-{}".format(self.sampling_frequency_index,used_channels,payload_len))
+
+        payload_len, generation_loop_duration, channels_count, sampling_frequency = \
+            self.__generation_init(self.sampling_frequency_index, [True,True,True,True], False)
+        payload_start_sending_len = int(payload_len*sampling_frequency*channels_count//800)
+
         if (not self.isGeneRunning):
             self.isGeneRunning = True
             while self.isGeneRunning:
-                # do something with fifo :D
 
-                # if self.is_payload_present(payload_len):
-                #     ch0, ch1 = self.read_data([True,True], payload_len)
-                #     ch0 = self.calibrationSamples(ch0)
-                #     ch1 = self.calibrationSamples(ch1)
-                #     if (self.dataReadyCB):
-                #         self.dataReadyCB(ch0,ch1)
-                #     time.sleep(0)
-                # else:
+                if ( len(self.fifo) >= payload_start_sending_len ):
+                    if (not self.is_event_set()):
+                        # print("generating data")
+                        self.__send_entire_fifo()
                 time.sleep(0)
+                # try:
+
+
+                #     while len(self.fifo) < payload_start_sending_len and not self.is_event_set() and self.serGene.is_open():
+                #         time.sleep(0)
+
+                #     while not self.is_event_set() and self.serGene.is_open():
+                #         i: int = 0
+                #         while len(self.fifo) == 0 and i < 100:
+                #             time.sleep(0)
+                #             i += 1
+                #         if len(self.fifo) > 0:
+                #             self.__send_entire_fifo(com)
+                #             time.sleep(0)
+
+                #     if not self.serGene.is_open():
+                #         print('Unexpected serial error. Stopping generation')
+                #     if self.is_event_set():
+                #         print('Interruption caught during generation. Stopping thread')
+                # except serial.SerialException:
+                #     print('Unexpected serial error. Stopping generation')
+                #     # set_com_closed()
+
+                # time.sleep(0)
 
     def __runGene(self):
         self.geneTh = threading.Thread(target=self.__do_runGene, args=())

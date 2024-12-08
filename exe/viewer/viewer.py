@@ -30,6 +30,7 @@ class mainWindow(QMainWindow):
 
         mainWidget=QWidget(self)
         self.setCentralWidget(mainWidget)
+        self.setWindowTitle("Démo visualisation signaux")
 
         vbox = QVBoxLayout()
         mainWidget.setLayout(vbox)  

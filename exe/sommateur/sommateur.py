@@ -30,6 +30,7 @@ class mainWindow(QMainWindow):
 
         mainWidget=QWidget(self)
         self.setCentralWidget(mainWidget)
+        self.setWindowTitle("Sommateur - démo génération signaux")
 
         vbox = QVBoxLayout()
         mainWidget.setLayout(vbox)  
@@ -67,7 +68,8 @@ class mainWindow(QMainWindow):
         self.ch1PlotWidget.addDataArray([ch1])
 
         empty = self.status.emptyBurst(len(ch0))
-        self.status.sendBurst(empty,empty,empty,empty)
+        sum = np.add(ch0,ch1)
+        self.status.sendBurst(sum,empty,empty,empty)
 
 
     def closeEvent(self,event):
