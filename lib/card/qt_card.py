@@ -49,7 +49,10 @@ class qtCard(QtCore.QObject):
 
     def checkStatus(self):
         if ( not self.card == 0):
-            return True
+            if (self.card.isConnected):
+                return True
+            else:
+                return False
         else:
             logging.warning("Not connected to a device")
             return False

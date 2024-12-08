@@ -81,3 +81,31 @@ V_MAX = 131072 # 2**17
 
 # Coefficient of the signal to plot
 SIGNAL_COEFF = 2
+
+################
+# Data generation
+################
+MAX_8_BITS_VALUE = 255
+VALUE_0V = 32768
+
+# SPI header for channel 0
+SPI_HEADER_CH_0 = 0x1A
+
+# SPI header for channel 1
+SPI_HEADER_CH_1 = 0x19
+
+# SPI header for channel 2
+SPI_HEADER_CH_2 = 0x1C
+
+# SPI header for channel 3
+SPI_HEADER_CH_3 = 0x1B
+
+# List pf SPI headers
+SPI_HEADERS = [SPI_HEADER_CH_0, SPI_HEADER_CH_1, SPI_HEADER_CH_2, SPI_HEADER_CH_3]
+
+# Signal borders
+SIGNAL_MIN = 0
+SIGNAL_MAX = 8388607
+
+# Padding to complete 32-bits int
+PAYLOAD_PADDING = 0

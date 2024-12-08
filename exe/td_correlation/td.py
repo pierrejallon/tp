@@ -40,6 +40,13 @@ class mainWindow(QMainWindow):
         self.currentFrame = 0
         self.Te = 1.0/10000
 
+        if ((port[0]==None)|(port[1]==None)):
+            msgBox = QMessageBox()
+            msgBox.setText("Carte non detectée. Est ce qu'elle est branchée?\r\nLe logiciel va se fermer.")
+            msgBox.exec()
+            QTimer.singleShot(0, self.close)
+            return
+
         self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.NO_FILTER )  # 10kHz, no anti-aliasing filter
         self.card.dataReceived.connect(self.seqReceived)    # when a sequence is received, call function seqReceived
         self.card.startAcqui()

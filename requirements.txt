@@ -7,3 +7,4 @@ pyqtgraph=0.12.4
 pyside2
 python=3.10.4
 scipy
+pyserial=3.5

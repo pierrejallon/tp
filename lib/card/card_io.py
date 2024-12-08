@@ -8,6 +8,7 @@ import serial
 import serial.tools.list_ports
 import logging
 from lib.card.card_constants import *
+from threading import Lock, Event
 
 # Sampling frequency of the signal enumeration
 FREQUENCY_100HZ = 0
@@ -30,25 +31,47 @@ def listSerialPort():
 def findSerialPort():
     """Get the name of the port that is connected to Arduino."""
     ports = serial.tools.list_ports.comports()
+    resu = [None,None]
     for p in ports:
         if p.vid and p.vid==1155:
             if p.pid and  p.pid==22336:
+                if (p.location):    # difference is here
+                    port = p.device
+                    resu[1] = port
                 if (not p.location):
-                    port = p
-                    return port.device
-    return None
+                    port = p.device
+                    resu[0] = port
+    return resu
 
 class cardAcqui():
 
     def __init__(self,port,samplingFreqIndex,antiAliasingFilterIndex):
-        self.ser = serial.Serial(port=port,baudrate=2000000,timeout = 0.04)
+        # connect acquisition
+        self.ser = serial.Serial(port=port[0],baudrate=2000000,timeout = 0.04)
         self.ser.set_buffer_size(rx_size = 65536, tx_size = 65536)
         self.isConnected = self.ser.is_open
-
 
         if (not self.isConnected):
             logging.info("not connected")
             return
+
+        # connect generation
+        self.serGene = serial.Serial(port=port[1],baudrate=2000000,timeout = 0.04)
+        self.serGene.set_buffer_size(rx_size = 65536, tx_size = 65536)
+        self.isConnected = self.serGene.is_open
+
+        if (not self.isConnected):
+            logging.info("not connected")
+            return
+        
+        # data generation variables
+        self.fifo = []
+        self.fifo_mutex = Lock()
+
+        self.event_mutex = Lock()
+        self.last_channel_samples=[VALUE_0V, VALUE_0V, VALUE_0V, VALUE_0V]
+        self.event = Event()
+        self.single_info_message = False
 
         ##################
         # configure board        
@@ -57,38 +80,49 @@ class cardAcqui():
         self.reset_board()
         self.start_acquire(0)
         self.start_acquire(1)
-        self.stop_gen(0)
-        self.stop_gen(1)
-        self.stop_gen(2)
-        self.stop_gen(3)
+        self.start_gen(0)
+        self.start_gen(1)
+        self.start_gen(2)
+        self.start_gen(3)
 
         self.set_anti_aliasing_filter(0,antiAliasingFilterIndex)
         self.set_anti_aliasing_filter(1,antiAliasingFilterIndex)
 
         self.set_acquire_freq(samplingFreqIndex)
-        # self.set_gen_freq(samplingFreqIndex)
+        self.set_gen_freq(samplingFreqIndex)
         self.sampling_frequency_index = samplingFreqIndex
-
 
         ##################
         # start reading thread
         ##################
 
-        self.isRunning = False
+        self.isAcquiRunning = False
+        self.isGeneRunning = False
         self.dataReadyCB = 0     # callback for all kind of data
 
         # self.__runClient()
     def startAcqui(self):
-        if (not self.isRunning):
-            self.__runClient()
+        if (not self.isConnected):
+            return
+        if (not self.isAcquiRunning):
+            self.__runAcqui()
+        if (not self.isGeneRunning):
+            self.__runGene()
 
     def stopCard(self):
-        if (self.isRunning):
-            self.__stopClient() # stop reading thread
+        if (self.isAcquiRunning):
+            self.__stopAcqui() # stop reading thread
+
+        if (self.isGeneRunning):
+            self.__stopGene()
 
         if (self.isConnected):
             self.stop_acquire(0)
             self.stop_acquire(1)
+            self.stop_gen(1)
+            self.stop_gen(1)
+            self.stop_gen(1)
+            self.stop_gen(1)
             self.ser.close()
             self.isConnected = False
 
@@ -101,11 +135,32 @@ class cardAcqui():
     def connected(self):
         return self.ser.is_open
 
-    def running(self):
-        return self.isRunning
+    def acquiRunning(self):
+        return self.isAcquiRunning
 
     def setDataReadyCB(self,CB):
         self.dataReadyCB = CB
+
+    ###############
+    # Send data function
+    ###############
+    def sendSample(self,ch0,ch1,ch2,ch3):
+        samples = [[],[],[],[]]
+        samples[0][0] = ch0
+        samples[1][0] = ch1
+        samples[2][0] = ch2
+        samples[3][0] = ch3
+        # self.add_samples_to_fifo(samples)
+        return
+
+    def sendBurst(self,ch0,ch1,ch2,ch3):
+        samples = [[],[],[],[]]
+        samples[0] = ch0
+        samples[1] = ch1
+        samples[2] = ch2
+        samples[3] = ch3
+        # self.add_samples_to_fifo(samples)
+        return
 
     ###############
     # I/O functions
@@ -177,6 +232,10 @@ class cardAcqui():
         payload = [COMMAND_SET_ANTI_ALIA_FILTER, channel | (filter_number * 16)]
         # send payload on USB com
         self.ser.write(payload)
+
+    ###############
+    # internal for data reading
+    ###############
 
     def is_payload_present(self, payload_len):
         return (self.ser.in_waiting >= payload_len)
@@ -261,15 +320,101 @@ class cardAcqui():
         return c_s
 
     ###############
-    # Client management functions
+    # internal for data generation
+    ###############
+
+    # mutex manipulation (usefull ??)
+    def set_event(self,status: bool):
+        if not self.event_mutex.acquire():
+            return
+        try:
+            self.event.set() if status else self.event.clear()
+        except Exception:
+            pass
+        finally:
+            self.event_mutex.release()
+
+    def is_event_set(self):
+        if not self.event_mutex.acquire():
+            return
+        event_set = False
+        try:
+            event_set = self.event.is_set()
+        except Exception:
+            pass
+        finally:
+            self.event_mutex.release()
+            return event_set
+        
+
+    def build_payload(self,samples: list[list[int]],channels_out: list[bool]) -> list[int]:
+        usb_payload: list[int] = []
+        channel_samples: list[list[int]] = [[], [], [], []]
+
+        used_channels: list[bool] = []
+        max_samples: int = 0
+        for i in range(len(channels_out)):
+            if channels_out[i]:
+                used_channels.append(i)
+                # channel_samples[i] = filters[i](list(samples[INDEX_CH_IN_1]), list(samples[INDEX_CH_IN_2]))
+                ### Check here ? Convert values to byte ? 
+                channel_samples[i] = samples[i]
+                if channel_samples[i] == [] and not self.single_info_message:
+                    print('Warning : With current acquired data and filters, channel ' + str(i+1)
+                        + ' does not have output data')
+                elif channel_samples != []:
+                    # Revert to get last element as first in pop (faster)
+                    channel_samples[i].reverse()
+                    max_samples = max(max_samples, len(channel_samples[i]))
+
+        self.single_info_message = True
+        i: int = 0
+        while i < max_samples and not self.is_event_set():
+            for idx in used_channels:
+                if channel_samples[idx] != []:
+                    sample: int = channel_samples[idx].pop()
+                    if sample >= VALUE_OVERFLOW_16_BITS:
+                        sample = VALUE_OVERFLOW_16_BITS-1
+                    elif sample < 0:
+                        sample = 0
+                    self.last_channel_samples[idx]=sample
+                else :
+                    sample = self.last_channel_samples[idx]
+                usb_payload.append(int(sample) & MAX_8_BITS_VALUE)
+                usb_payload.append(int(sample) >> BITS_8 & MAX_8_BITS_VALUE)
+                # SPI header
+                usb_payload.append(SPI_HEADERS[idx])
+                # Padding
+                usb_payload.append(PAYLOAD_PADDING)
+            i += 1
+        return usb_payload
+
+    def __add_payload(self,payload: list[int]):
+        if not self.fifo_mutex.acquire():
+            return
+
+        try:
+            self.fifo.extend(payload)
+        except Exception:
+            print('error')
+        finally:
+            self.fifo_mutex.release()
+
+    def add_samples_to_fifo(self,samples):
+        channels_out = [True,True,True,True]
+        payload: list[int] = self.build_payload(samples, channels_out)
+        self.__add_payload(payload)
+
+    ###############
+    # Acquisition functions
     ###############
     
-    def __stopClient(self):
-        if (self.isRunning):
-            self.isRunning = False
+    def __stopAcqui(self):
+        if (self.isAcquiRunning):
+            self.isAcquiRunning = False
             self.mainTh.join()
 
-    def __do_runClient(self):
+    def __do_runAcqui(self):
         # PAYLOAD_LENS_BY_FREQUENCY = [48, 254, 510, 1022, 2046]
         PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
         ch0 = []
@@ -277,9 +422,9 @@ class cardAcqui():
         used_channels = 2
         payload_len = (PAYLOAD_LENS_BY_FREQUENCY[self.sampling_frequency_index]+2)*(4*used_channels)
         # print("{}-{}-{}".format(self.sampling_frequency_index,used_channels,payload_len))
-        if (not self.isRunning):
-            self.isRunning = True
-            while self.isRunning:
+        if (not self.isAcquiRunning):
+            self.isAcquiRunning = True
+            while self.isAcquiRunning:
                 if self.is_payload_present(payload_len):
                     ch0, ch1 = self.read_data([True,True], payload_len)
                     ch0 = self.calibrationSamples(ch0)
@@ -290,8 +435,46 @@ class cardAcqui():
                 else:
                     time.sleep(0)
 
-    def __runClient(self):
-        self.mainTh = threading.Thread(target=self.__do_runClient, args=())
+    def __runAcqui(self):
+        self.mainTh = threading.Thread(target=self.__do_runAcqui, args=())
         self.mainTh.setDaemon(True)
         self.mainTh.start()
+
+
+    ###############
+    # Generation functions
+    ###############
+
+    def __stopGene(self):
+        if (self.isGeneRunning):
+            self.isGeneRunning = False
+            self.geneTh.join()
+
+    def __do_runGene(self):
+        # # PAYLOAD_LENS_BY_FREQUENCY = [48, 254, 510, 1022, 2046]
+        # PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
+        # ch0 = []
+        # ch1 = []
+        # used_channels = 2
+        # payload_len = (PAYLOAD_LENS_BY_FREQUENCY[self.sampling_frequency_index]+2)*(4*used_channels)
+        # # print("{}-{}-{}".format(self.sampling_frequency_index,used_channels,payload_len))
+        if (not self.isGeneRunning):
+            self.isGeneRunning = True
+            while self.isGeneRunning:
+                # do something with fifo :D
+
+                # if self.is_payload_present(payload_len):
+                #     ch0, ch1 = self.read_data([True,True], payload_len)
+                #     ch0 = self.calibrationSamples(ch0)
+                #     ch1 = self.calibrationSamples(ch1)
+                #     if (self.dataReadyCB):
+                #         self.dataReadyCB(ch0,ch1)
+                #     time.sleep(0)
+                # else:
+                time.sleep(0)
+
+    def __runGene(self):
+        self.geneTh = threading.Thread(target=self.__do_runGene, args=())
+        self.geneTh.setDaemon(True)
+        self.geneTh.start()
 
