@@ -44,3 +44,7 @@ class seqPlotWidget(QWidget):
         self.x = xValues
         self.y = yValues
         self.replotCurves()
+
+    def setUnitYRange(self):
+        # self.plot.getAxis('left').p1.setXRange(5, 20, padding=0)
+        self.plot.setRange(yRange=[-1,1])

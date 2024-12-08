@@ -38,9 +38,9 @@ class mainWindow(QMainWindow):
 
         # acquisition parameters
         self.currentFrame = 0
-        self.Te = 1.0/500
+        self.Te = 1.0/10000
 
-        self.card.connectToPort(port,2,6 )  # 1kHz, no anti-aliasing filter
+        self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.NO_FILTER )  # 10kHz, no anti-aliasing filter
         self.card.dataReceived.connect(self.seqReceived)    # when a sequence is received, call function seqReceived
         self.card.startAcqui()
 
@@ -99,13 +99,18 @@ class mainWindow(QMainWindow):
             self.ch0PlotWidget.setData(tps,[ch0])
             self.ch1PlotWidget.setData(tps,[ch1])
 
+            ####################
             # compute correlation:
+            ####################
             Ex = np.sum(np.array(ch0)**2)
             Ey = np.sum(np.array(ch1)**2)
 
-
             corr = np.correlate(ch0, ch1, mode='full')
             corr = corr / (math.sqrt(Ex*Ey))
+            NbDrop = 1
+            corr = corr[NbDrop:-NbDrop]
+            N = len(ch0)
+            corr = np.array([corr[k]*N/(N-math.fabs(k+NbDrop-N)) for k in range(len(corr))])
             tps = [(k-int(len(corr)*0.5))*self.Te for k in range(len(corr))]
 
             if self.currentMode==1:
@@ -125,8 +130,9 @@ class mainWindow(QMainWindow):
                     corr = (1-self.filter_coeff) * corr + self.previousCorr * self.filter_coeff 
                     self.previousCorrIndex = corr
 
+            # plot correlation
             self.correlationWidget.setData(tps,[corr])
-            
+            self.correlationWidget.setUnitYRange()
 
             return 
     
