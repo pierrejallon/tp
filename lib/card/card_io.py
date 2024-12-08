@@ -35,13 +35,15 @@ def findSerialPort():
     for p in ports:
         if p.vid and p.vid==1155:
             if p.pid and  p.pid==22336:
-                if (p.location):    # difference is here
-                    port = p.device
-                    resu[1] = port
-                if (not p.location):
+                if (p.location): 
+                    if (p.location=="1-3:x.2"):
+                        port = p.device
+                        resu[1] = port
+                if (not p.location) | (p.location=="1-3:x.0"):
                     port = p.device
                     resu[0] = port
     return resu
+
 
 class cardAcqui():
 

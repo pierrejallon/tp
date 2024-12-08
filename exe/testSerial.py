@@ -13,9 +13,9 @@ if __name__ == '__main__':
         print(p.description)
         if p.vid and p.vid==1155:
             if p.pid and  p.pid==22336:
-                if (p.location):
+                if (not p.location) | (p.location=="1-3:x.0"):
                     print("dev 1: {}".format(p.device))
-                else:
+                if (p.location) & (p.location=="1-3:x.2"):
                     port = p
                     print("dev 2: {}".format(p.device))
 
