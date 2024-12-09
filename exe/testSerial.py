@@ -15,9 +15,10 @@ if __name__ == '__main__':
             if p.pid and  p.pid==22336:
                 if (not p.location) | ("x.0" in p.location):
                     print("dev 1: {}".format(p.device))
-                if (p.location) & ("x.2" in p.location):
-                    port = p
-                    print("dev 2: {}".format(p.device))
+                if (p.location):
+                    if ("x.2" in p.location):
+                        port = p
+                        print("dev 2: {}".format(p.device))
 
     # myCard = card.cardAcqui( port.device,card.FREQUENCY_100HZ,card.NO_FILTER )
     # myCard.setDataReadyCB( newData )
