@@ -36,10 +36,10 @@ def findSerialPort():
         if p.vid and p.vid==1155:
             if p.pid and  p.pid==22336:
                 if (p.location): 
-                    if (p.location=="1-3:x.2"):
+                    if ("x.2" in p.location):
                         port = p.device
                         resu[1] = port
-                if (not p.location) | (p.location=="1-3:x.0"):
+                if (not p.location) | ("x.0" in p.location):
                     port = p.device
                     resu[0] = port
     return resu
