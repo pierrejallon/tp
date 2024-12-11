@@ -46,6 +46,8 @@ class cardWidget(QtWidgets.QWidget):
 
         self.findChild(QPushButton,"pushButton_2").clicked.connect(self.refreshCOM)
         self.findChild(QPushButton,"pushButton").clicked.connect(self.connectCard)
+        self.findChild(QPushButton,"pushButton_3").clicked.connect(self.resetBaudRate)
+        
         self.refreshCOM()
 
     def refreshCOM(self):
@@ -120,14 +122,21 @@ class cardWidget(QtWidgets.QWidget):
             self.card.stopCard()
             self.card = 0
 
+    def resetBaudRate(self):
+        self.nbSamplesReceived = 0
+        self.acqui_start_time = time.time()
+
     def dataReceived(self,ch0,ch1):
         # data rate estimation
         current = time.time()
-        # self.nbSamplesReceived = self.nbSamplesReceived + len(ch0)
-        self.nbSamplesReceived = self.nbSamplesReceived + 1
+        self.nbSamplesReceived = self.nbSamplesReceived + len(ch0)
+        # self.nbSamplesReceived = self.nbSamplesReceived + 1
         if (current>self.acqui_start_time):
             rate = self.nbSamplesReceived/(current-self.acqui_start_time)
-            self.findChild(QLabel,"label_10").setText("rate: {:.2f} Hz".format(rate))
+            if (rate>1500):
+                self.findChild(QLabel,"label_10").setText("rate: {:.2f} kHz".format(rate/1000))
+            else:
+                self.findChild(QLabel,"label_10").setText("rate: {:.2f} Hz".format(rate))
 
         # emit received data
         self.dataReceivedSig.emit(ch0,ch1)
