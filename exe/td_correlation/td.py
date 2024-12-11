@@ -109,11 +109,11 @@ class mainWindow(QMainWindow):
             ####################
             # compute correlation:
             ####################
-            Ex = np.sum(np.array(ch0)**2)
-            Ey = np.sum(np.array(ch1)**2)
+            # Ex = np.sum(np.array(ch0)**2)
+            # Ey = np.sum(np.array(ch1)**2)
 
             corr = np.correlate(ch0, ch1, mode='full')
-            corr = corr / (math.sqrt(Ex*Ey))
+            # corr = corr / (math.sqrt(Ex*Ey))
             NbDrop = 1
             corr = corr[NbDrop:-NbDrop]
             N = len(ch0)
@@ -139,7 +139,7 @@ class mainWindow(QMainWindow):
 
             # plot correlation
             self.correlationWidget.setData(tps,[corr])
-            self.correlationWidget.setUnitYRange()
+            # self.correlationWidget.setUnitYRange()
 
             return 
     
