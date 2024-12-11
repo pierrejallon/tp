@@ -117,7 +117,7 @@ class mainWindow(QMainWindow):
             NbDrop = 1
             corr = corr[NbDrop:-NbDrop]
             N = len(ch0)
-            corr = np.array([corr[k]*N/(N-math.fabs(k+NbDrop-N)) for k in range(len(corr))])
+            corr = np.array([corr[k]*1/(N-math.fabs(k+NbDrop-N)) for k in range(len(corr))])
             tps = [(k-int(len(corr)*0.5))*self.Te for k in range(len(corr))]
 
             if self.currentMode==1:
