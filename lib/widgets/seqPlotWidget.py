@@ -11,10 +11,10 @@ class seqPlotWidget(QWidget):
     
     def __init__(self,curves,names):
         super(seqPlotWidget, self).__init__()
-        self.initUI()
 
         self.curves = curves
         self.names = names
+        self.initUI()
 
     def initUI(self):   
 
@@ -29,16 +29,23 @@ class seqPlotWidget(QWidget):
         self.plot = plotData.plotItem
         self.plot.addLegend()
 
+        self.curvesObj = [None] * len(self.curves)
+        for (ic,c) in enumerate(self.curves):
+            self.curvesObj[ic] =  self.plot.plot(name=self.names[ic]) 
+
 
     def replotCurves(self):
-        self.plot.clear()
         for (ic,c) in enumerate(self.curves):
-            self.plotData(self.x,self.y[ic],c,self.names[ic])
+            self.curvesObj[ic].setData(self.x,self.y[ic],pen=pg.mkPen(c, width=2))
+
+        # self.plot.clear()
+        # for (ic,c) in enumerate(self.curves):
+        #     self.plotData(self.x,self.y[ic],c,self.names[ic])
             
 
-    def plotData(self,x,y,color,name):
-        curve = self.plot.plot(name=name)
-        curve.setData(x,y,pen=pg.mkPen(color, width=2))
+    # def plotData(self,x,y,color,name):
+    #     curve = self.plot.plot(name=name)
+    #     curve.setData(x,y,pen=pg.mkPen(color, width=2))
         
     def setData(self,xValues,yValues):
         self.x = xValues

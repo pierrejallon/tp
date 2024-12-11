@@ -22,6 +22,7 @@ from lib.widgets.viewerWidget.viewerWidget import viewerWidget
 
 import numpy as np
 from scipy import signal
+import gc
 
 class mainWindow(QMainWindow):
     def __init__(self,handler):

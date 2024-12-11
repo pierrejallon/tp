@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QMessageBox,QApplication,QWidget,QLayout,QLabel,QV
 import logging
 from lib.card.card_io import listSerialPort,findSerialPort,cardAcqui
 import time 
+import gc
 
 class cardWidget(QtWidgets.QWidget):
     

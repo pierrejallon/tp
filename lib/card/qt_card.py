@@ -1,7 +1,8 @@
 import lib.card.card_io as card_io
 from PySide2 import QtCore, QtGui,QtWidgets
-from PySide2.QtCore import QObject,Signal
+from PySide2.QtCore import QTimer,QObject,Signal
 import logging
+import gc
 
 class qtCard(QtCore.QObject):
 

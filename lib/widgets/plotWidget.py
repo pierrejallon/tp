@@ -11,7 +11,6 @@ class plotWidget(QWidget):
     
     def __init__(self,memorySize,Te,curves,names):
         super(plotWidget, self).__init__()
-        self.initUI()
 
         self.memorySize = memorySize # in seconds
         self.samplingTime = Te # in seconds
@@ -20,6 +19,8 @@ class plotWidget(QWidget):
 
         self.time = np.linspace(-self.memorySize,0,num=(int)(self.memorySize/self.samplingTime))
         self.rawData = np.zeros((len(curves),(int)(self.memorySize/self.samplingTime)))
+
+        self.initUI()
 
     def initUI(self):   
 
@@ -33,6 +34,10 @@ class plotWidget(QWidget):
         vbox.addWidget(plotData)
         self.plot = plotData.plotItem
         self.plot.addLegend()
+
+        self.curvesObj = [None] * len(self.curves)
+        for (ic,c) in enumerate(self.curves):
+            self.curvesObj[ic] =  self.plot.plot(name=self.names[ic]) 
 
         self.timer=QTimer()
         self.timer.timeout.connect(self.replotCurves)
@@ -52,13 +57,8 @@ class plotWidget(QWidget):
         self.replotCurves()
 
     def replotCurves(self):
-        self.plot.clear()
         for (ic,c) in enumerate(self.curves):
-            self.plotData(self.time,self.rawData[ic,:],c,self.names[ic])
-
-    def plotData(self,x,y,color,name):
-        curve = self.plot.plot(name=name)
-        curve.setData(x,y,pen=pg.mkPen(color, width=2))
+            self.curvesObj[ic].setData(self.time,self.rawData[ic,:],pen=pg.mkPen(c, width=2))
         
     def addRawData(self,values):
         # time management

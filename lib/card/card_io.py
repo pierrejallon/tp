@@ -39,9 +39,14 @@ def findSerialPort():
                     if ("x.2" in p.location):
                         port = p.device
                         resu[1] = port
-                if (not p.location) | ("x.0" in p.location):
+                if (not p.location) :
                     port = p.device
                     resu[0] = port
+                if (p.location): 
+                    if ("x.0" in p.location):
+                        port = p.device
+                        resu[0] = port
+
     return resu
 
 
@@ -287,12 +292,13 @@ class cardAcqui():
         # extract samples from data
         l_SIGNAL_COEFF = 1.22
 
-        samples = []
         len_samples = data[LEN_LSB_INDEX]
         len_samples += data[LEN_MIDDLE_BITS_1_INDEX] << BITS_8
         len_samples += data[LEN_MIDDLE_BITS_2_INDEX] << BITS_16
         len_samples += data[LEN_MSB_INDEX] << BITS_24
+        samples = [0] * len_samples
         i = 0
+        iS = 0
         if channel_in:
             for i in range(HEADER_SIZE, len_samples*NB_U8_IN_U32+HEADER_SIZE, NB_U8_IN_U32):
                 if i+3 < len(data):
@@ -307,13 +313,17 @@ class cardAcqui():
                         sample = VALUE_OVERFLOW_16_BITS-1
                     elif sample < 0:
                         sample = 0
-                    samples.append(sample)
+                    samples[iS] = sample
+                    iS = iS + 1 
+
                 else:
                     print("Error: Not enough data")
                     break
             i += NB_U8_IN_U32
         else:
             i = len_samples*4+HEADER_SIZE
+
+        # print('{}-{}'.format(len_samples,len(samples)))
         return i, samples
 
     def calibrationSamples(self,samples):
@@ -454,8 +464,6 @@ class cardAcqui():
     def __do_runAcqui(self):
         # PAYLOAD_LENS_BY_FREQUENCY = [48, 254, 510, 1022, 2046]
         PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
-        ch0 = []
-        ch1 = []
         used_channels = 2
         payload_len = (PAYLOAD_LENS_BY_FREQUENCY[self.sampling_frequency_index]+2)*(4*used_channels)
         # print("{}-{}-{}".format(self.sampling_frequency_index,used_channels,payload_len))

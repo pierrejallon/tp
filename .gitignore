@@ -1,4 +1,4 @@
-exe/td2/td2Corr.py
+exe/testSerial.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
