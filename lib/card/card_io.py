@@ -33,6 +33,7 @@ def findSerialPort():
     ports = serial.tools.list_ports.comports()
     resu = [None,None]
     for p in ports:
+        # print("{} - {} - {} - {}".format(p,p.vid,p.pid,p.location))
         if p.vid and p.vid==1155:
             if p.pid and  p.pid==22336:
                 if (p.location): 

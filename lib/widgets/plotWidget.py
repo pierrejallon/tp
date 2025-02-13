@@ -6,6 +6,7 @@ from PySide2.QtWidgets import QApplication,QMessageBox,QWidget,QLayout,QVBoxLayo
 import pyqtgraph as pg
 import numpy as np
 import logging
+from threading import Thread, Lock
 
 class plotWidget(QWidget):
     
@@ -19,6 +20,9 @@ class plotWidget(QWidget):
 
         self.time = np.linspace(-self.memorySize,0,num=(int)(self.memorySize/self.samplingTime))
         self.rawData = np.zeros((len(curves),(int)(self.memorySize/self.samplingTime)))
+
+        self.mutex = Lock()
+        self.hasReceivedData = False
 
         self.initUI()
 
@@ -38,6 +42,7 @@ class plotWidget(QWidget):
         self.curvesObj = [None] * len(self.curves)
         for (ic,c) in enumerate(self.curves):
             self.curvesObj[ic] =  self.plot.plot(name=self.names[ic]) 
+        self.replotCurves()
 
         self.timer=QTimer()
         self.timer.timeout.connect(self.replotCurves)
@@ -57,8 +62,14 @@ class plotWidget(QWidget):
         self.replotCurves()
 
     def replotCurves(self):
-        for (ic,c) in enumerate(self.curves):
-            self.curvesObj[ic].setData(self.time,self.rawData[ic,:],pen=pg.mkPen(c, width=2))
+        if self.hasReceivedData:
+            self.plot.getViewBox().disableAutoRange()
+            nrj = 0
+            for (ic,c) in enumerate(self.curves):
+                self.curvesObj[ic].setData(self.time,self.rawData[ic,:],pen=pg.mkPen(c, width=2))
+                nrj += np.std(self.rawData[ic,:])
+            if nrj>0:
+                self.plot.getViewBox().autoRange()
         
     def addRawData(self,values):
         # time management
@@ -68,6 +79,7 @@ class plotWidget(QWidget):
         for (ic,c) in enumerate(self.curves):
             self.rawData[ic,:-1] = self.rawData[ic,1:] 
             self.rawData[ic,-1] = values[ic]
+        self.hasReceivedData = True
 
     def addDataArray(self,values):
         # # time management
@@ -82,3 +94,5 @@ class plotWidget(QWidget):
         for (ic,c) in enumerate(self.curves):
             self.rawData[ic,:-l] = self.rawData[ic,l:] 
             self.rawData[ic,-l:] = values[ic]
+
+        self.hasReceivedData = True
