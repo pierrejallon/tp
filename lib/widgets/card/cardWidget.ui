@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>222</width>
-    <height>423</height>
+    <width>288</width>
+    <height>492</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,6 +19,13 @@
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
        <widget class="QPushButton" name="pushButton_2">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Refresh COM</string>
         </property>
@@ -26,6 +33,13 @@
       </item>
       <item row="2" column="0">
        <widget class="QPushButton" name="pushButton">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Démarrer acquisition</string>
         </property>
@@ -33,6 +47,13 @@
       </item>
       <item row="1" column="0">
        <widget class="QPushButton" name="pushButton_3">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Reset calcul débit</string>
         </property>
@@ -43,6 +64,11 @@
    </item>
    <item row="2" column="1">
     <widget class="QComboBox" name="comboBox_2">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <item>
       <property name="text">
        <string>100 Hz</string>
@@ -75,6 +101,11 @@
    </item>
    <item row="4" column="0">
     <widget class="QLabel" name="label_5">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="text">
       <string>Status:</string>
      </property>
@@ -156,13 +187,25 @@
    </item>
    <item row="4" column="1">
     <widget class="QLabel" name="label_10">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
-      <string>0</string>
+      <string>1000 Hz</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_3">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="text">
       <string>Fe:</string>
      </property>
