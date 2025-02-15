@@ -69,7 +69,7 @@ class mainWindow(QMainWindow):
         vbox = QHBoxLayout()
         wid.setLayout(vbox)  
 
-        self.rawPlotWidget = plotWidget(10,1.0 / self.fe,['b','r'],['x','y'])
+        self.rawPlotWidget = plotWidget(1,1.0 / self.fe,['b','r'],['x','y'])
         self.fftPlot = seqPlotWidget(['b','r'],['X(f)','Y(f)'])
 
         wid.layout().addWidget(self.rawPlotWidget)

@@ -22,7 +22,7 @@ import numpy as np
 from scipy import signal
 
 class mainWindow(QMainWindow):
-    
+
     def __init__(self,handler):
         # QMainWindow.__init__(self)
         super(mainWindow, self).__init__()
@@ -67,7 +67,7 @@ class mainWindow(QMainWindow):
         self.tab = QTabWidget()
         mainWidget.layout().addWidget(self.tab)
 
-        self.rawPlotWidget = plotWidget(5,1/1000,['b'],['x'])
+        self.rawPlotWidget = plotWidget(1,1/1000,['b'],['x'])
         self.tab.addTab(self.rawPlotWidget,"Signaux bruts")
 
         self.seqPlot = seqPlotWidget(['b'],['Bloc'])
