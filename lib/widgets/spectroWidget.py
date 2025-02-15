@@ -80,6 +80,22 @@ class spectroWidget(QWidget):
         self.plot.clear()
         self.plot.addItem(self.waterfallImg)
 
+    def setFe(self,Fe):
+        self.Fe_max = Fe
+
+        self.x = np.arange(-1.0*(int)(self.memorySize*self.samplingTime),0)
+        self.y = np.arange(-0.5*self.FFTSize,0.5*self.FFTSize)
+
+        x_scale = (self.x[-1] - self.x[0])/(self.x.shape[0]-1) if self.x.shape[0] > 1 else 1.0
+        y_scale = (self.y[-1] - self.y[0])/(self.y.shape[0]-1) if self.y.shape[0] > 1 else 1.0
+
+        self.plot.setLimits(xMin=self.x[0] - x_scale/2, xMax=self.x[-1] + x_scale/2,
+                                yMin=self.y[0] - y_scale/2, yMax=self.y[-1] + y_scale/2)
+
+        self.img.resetTransform()
+        self.img.scale(x_scale, y_scale * self.Fe_max/self.FFTSize)
+        self.img.setPos(self.x[0] - x_scale/2, (self.y[0] - y_scale/2)* self.Fe_max/self.FFTSize)
+
     def replotCurves(self):
         self.img.setImage(self.img_array)
         xAxis = self.plot.getAxis('bottom')

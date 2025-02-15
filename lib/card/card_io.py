@@ -464,7 +464,8 @@ class cardAcqui():
 
     def __do_runAcqui(self):
         # PAYLOAD_LENS_BY_FREQUENCY = [48, 254, 510, 1022, 2046]
-        PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
+        # PAYLOAD_LENS_BY_FREQUENCY = [64, 256, 512, 1024, 1984]
+        PAYLOAD_LENS_BY_FREQUENCY = [1, 1, 1, 2, 30]
         used_channels = 2
         payload_len = (PAYLOAD_LENS_BY_FREQUENCY[self.sampling_frequency_index]+2)*(4*used_channels)
         # print("{}-{}-{}".format(self.sampling_frequency_index,used_channels,payload_len))

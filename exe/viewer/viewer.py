@@ -59,7 +59,7 @@ class mainWindow(QMainWindow):
         self.ch0PlotWidget = plotWidget(1,0.01,['b'],['channel 1'])
         mainWidget.layout().addWidget(self.ch0PlotWidget)
 
-        self.ch1PlotWidget = plotWidget(1,0.01,['b'],['channel 2'])
+        self.ch1PlotWidget = plotWidget(1,0.01,['b','r'],['channel 1','channel 2'])
         mainWidget.layout().addWidget(self.ch1PlotWidget)
 
     def updateTW(self,TW):
@@ -72,7 +72,7 @@ class mainWindow(QMainWindow):
 
     def dataReceived(self,ch0,ch1):
         self.ch0PlotWidget.addDataArray([ch0])
-        self.ch1PlotWidget.addDataArray([ch1])
+        self.ch1PlotWidget.addDataArray([ch0,ch1])
 
     def closeEvent(self,event):
         self.status.stopCard()

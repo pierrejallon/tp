@@ -14,6 +14,9 @@ import lib.card.card_io as card_io
 import lib.card.qt_card as QCard
 from lib.widgets.seqPlotWidget import seqPlotWidget
 import lib.widgets.td1_options.td1Options as td1OptionsWidget
+from lib.sigpro.seqAcquisition import seqAcquisition
+from lib.widgets.plotWidget import plotWidget
+
 import lib.sigpro.kalman as kalman
 import numpy as np
  
@@ -48,8 +51,15 @@ class mainWindow(QMainWindow):
             return
 
         self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.NO_FILTER )  # 10kHz, no anti-aliasing filter
-        self.card.dataReceived.connect(self.seqReceived)    # when a sequence is received, call function seqReceived
+        self.card.dataReceived.connect(self.dataReceived)    # when a sequence is received, call function seqReceived
         self.card.startAcqui()
+
+        # split signal in time window
+        # time window length: 1 second
+        # time between time window: 0.5 second
+        self.nbDataReceived = 0
+        self.fe = 10000
+        self.seqCutter = seqAcquisition(self.seqReceived,1.0,0.5,self.fe,2)
 
         #####
         # Setup control widget (left of GUI)
@@ -79,10 +89,11 @@ class mainWindow(QMainWindow):
         # Setup curves
         #####
 
-        self.ch0PlotWidget = seqPlotWidget(['b'],['channel 1'])
+        sigLength_inSec = 1
+        self.ch0PlotWidget = plotWidget(sigLength_inSec,1/self.fe,['b'],['channel 1'])
         mainWidget.layout().addWidget(self.ch0PlotWidget)
 
-        self.ch1PlotWidget = seqPlotWidget(['g'],['channel 2'])
+        self.ch1PlotWidget = plotWidget(sigLength_inSec,1/self.fe,['g'],['channel 2'])
         mainWidget.layout().addWidget(self.ch1PlotWidget)
 
         self.correlationWidget = seqPlotWidget(['r'],['correlation'])
@@ -97,26 +108,32 @@ class mainWindow(QMainWindow):
     # Data received callback
     ##################
 
-    # this function is called when two sequences are received on both inputs
-    def seqReceived(self,ch0,ch1):
-        self.currentFrame = self.currentFrame + 1
-        self.currentTimeIndex = self.currentFrame * len(ch0) * self.Te
+    # called when data is received from card
+    def dataReceived(self,ch0,ch1):
         if not self.pauseStatus:    # if not on pause
-            tps = [self.currentTimeIndex + self.Te * k for k in range(len(ch0))]
-            self.ch0PlotWidget.setData(tps,[ch0])
-            self.ch1PlotWidget.setData(tps,[ch1])
+            # plot data
+            self.ch0PlotWidget.addDataArray([ch0])
+            self.ch1PlotWidget.addDataArray([ch1])
+
+        # # compute time
+        # tps = [(k+self.nbDataReceived) * 1.0/self.fe for k in range(len(ch0))]
+        # self.nbDataReceived = self.nbDataReceived + len(ch0)
+
+        # cut signal into sequence
+        self.seqCutter.arrayReceived([ch0,ch1])
+
+    # this function is called when a time window is ready
+    def seqReceived(self,seq):
+        if not self.pauseStatus:    # if not on pause
 
             ####################
             # compute correlation:
             ####################
-            # Ex = np.sum(np.array(ch0)**2)
-            # Ey = np.sum(np.array(ch1)**2)
 
-            corr = np.correlate(ch0, ch1, mode='full')
-            # corr = corr / (math.sqrt(Ex*Ey))
+            corr = np.correlate(seq[0,:], seq[1,:], mode='full')
             NbDrop = 1
             corr = corr[NbDrop:-NbDrop]
-            N = len(ch0)
+            N = len(seq[0,:])
             corr = np.array([corr[k]*1/(N-math.fabs(k+NbDrop-N)) for k in range(len(corr))])
             tps = [(k-int(len(corr)*0.5))*self.Te for k in range(len(corr))]
 

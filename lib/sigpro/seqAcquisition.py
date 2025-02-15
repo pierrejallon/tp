@@ -12,34 +12,48 @@ class seqAcquisition():
     def __init__(self,seqReadyCB,nbSec,offset,samplingFreq,size):
         self.seqReadyCB = seqReadyCB
         self.nbFrameReceived = 0
+        self.nbSec = nbSec
         self.nbSamples = (int)(nbSec * samplingFreq)
+        self.rawOffset = offset
         self.offset = offset  * samplingFreq
         self.size = size
-        self.values = np.zeros( (self.nbSamples,size) )
+        self.values = np.zeros( (self.size,self.nbSamples*2) )
+
+    def setFe(self,Fe):
+        self.nbSamples = (int)(self.nbSec * Fe)
+        self.offset = self.rawOffset  * Fe
+        self.reset()
 
     def reset(self):
         self.nbFrameReceived = 0
-        self.values = np.zeros( (self.nbSamples,self.size) )
+        self.values = np.zeros( (self.size,self.nbSamples*2) )
 
     def changeTW(self,nbSec,offset,samplingFreq):
         self.nbFrameReceived = 0
-        self.nbSamples = nbSec * samplingFreq
-        self.offset = offset  * samplingFreq
-        self.values = np.zeros( (self.nbSamples,self.size) )
+        self.nbSamples = int(nbSec * samplingFreq)
+        self.offset = int(offset  * samplingFreq)
+        self.values = np.zeros( (self.size,self.nbSamples*2) )
 
     def changeOffsetInSamples(self,offset):
         self.offset = offset  
 
-    def processArray(self,a,v):
-        if (len(v)==self.size):
-            a = np.vstack([a,v])
-            a = np.delete(a,0,0)
-        return a
+    def arrayReceived(self,newArray):
 
-    def dataReceived(self,newValues):
-        self.values = self.processArray( self.values,newValues )
-        self.nbFrameReceived = self.nbFrameReceived + 1
+        # # time management
+        l = len(newArray[0])
+        if (l==0):
+            return 
+        # if l > len(self.values[0,:])-1:
+        #     l = len(self.values[0,:]) - 2
+        #     for (ic,c) in enumerate(self.values):
+        #         newArray[ic][:] = newArray[ic][-l:]
+
+        for (ic,c) in enumerate(self.values):
+            # print(self.values[ic,-l:])
+            self.values[ic,:-l] = self.values[ic,l:] 
+            self.values[ic,-l:] = newArray[ic][:]
+
+        self.nbFrameReceived = self.nbFrameReceived + l
         if (self.nbFrameReceived>self.offset):
-            self.seqReadyCB( self.values ) 
+            self.seqReadyCB( self.values[:,0:self.nbSamples] ) 
             self.nbFrameReceived = 0
-
