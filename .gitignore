@@ -1,6 +1,7 @@
 lib/card_debug
 exe/viewer_debug
 exe/test
+exe/test_julie
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
