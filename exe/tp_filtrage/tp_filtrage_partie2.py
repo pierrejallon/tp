@@ -59,9 +59,7 @@ class mainWindow(QMainWindow):
         duree_affichage=1
         self.ch0PlotWidget = plotWidget(duree_affichage,1.0 / self.fe,['b'],['x'])
         self.ch1PlotWidget = plotWidget(duree_affichage,1.0 / self.fe,['b'],['xf'])
-        # self.PlotWidget = plotWidget(duree_affichage,1.0 / self.fe,['b','r'],['x','xf'])
 
-        # wid.layout().addWidget(self.PlotWidget)
         wid.layout().addWidget(self.ch0PlotWidget)
         wid.layout().addWidget(self.ch1PlotWidget)
         mainWidget.layout().addWidget(wid)
@@ -75,21 +73,10 @@ class mainWindow(QMainWindow):
         # # time window
         # self.seqCutter = seqAcquisition(self.seqReceived,self.TWLength,1.0,self.fe,3)
 
-        # init filter
-        self.filter_b1 = signal.firwin2(201, [0,200,400,600,800,self.fe/2],[0,0,1,1,0,0],fs=self.fe)
+        # filter definitions
+        self.filter_b1 = signal.firwin2(ordre, [0,...,self.fe/2],[...],fs=self.fe)
         self.filter_a1 = np.array([1])
         self.f1 = LiveLFilter(self.filter_b1,self.filter_a1)
-
-        # init filter
-        self.filter_b2 = signal.firwin2(201, [0,600,800,1200,1400,self.fe/2],[0,0,1,1,0,0],fs=self.fe)
-        self.filter_a2 = np.array([1])
-        self.f2 = LiveLFilter(self.filter_b2,self.filter_a2)
-
-        # init filter
-        self.filter_b3 = signal.firwin2(201, [0,200,300,self.fe/2],[1,1,0,0],fs=self.fe)
-        self.filter_a3 = np.array([1])
-        self.f3 = LiveLFilter(self.filter_b3,self.filter_a3)
-
 
 
     # called when sampling frequence is defined from card interface
@@ -97,7 +84,6 @@ class mainWindow(QMainWindow):
         self.fe = Fe
         self.ch0PlotWidget.setFe(Fe)
         self.ch1PlotWidget.setFe(Fe)
-        # self.PlotWidget.setFe(Fe)
 
 
 
@@ -105,28 +91,14 @@ class mainWindow(QMainWindow):
     # data related functions
     #############
     def dataReceived(self,ch0,ch1):
-       # filter signals
-        fV1 = [0] * len(ch0)
-        fV2 = [0] * len(ch0)
-        RfV2 = [0] * len(ch0)        
-        fRfV2 = [0] * len(ch0)        
-        sortie = [0] * len(ch0)        
+       # signal processing
+        fV1 = [0] * len(ch0)  
         for (ic,v) in enumerate(ch0):
             fV1[ic] = self.f1.process(v)
-            fV2[ic] = self.f2.process(v)
-            RfV2[ic]=np.abs(fV2[ic])
-            fRfV2[ic] = self.f3.process(RfV2[ic])
-            if fRfV2[ic]>0.02:
-                sortie[ic]=-5
-            else :
-                sortie[ic]=5
-
-
 
         # plot signals
-        # self.PlotWidget.addDataArray([ch0,fV1])
         self.ch0PlotWidget.addDataArray([ch0])
-        self.ch1PlotWidget.addDataArray([fRfV2])
+        self.ch1PlotWidget.addDataArray([fV1])
 
         # compute time
         tps = [(k+self.nbDataReceived) * 1.0/self.fe for k in range(len(ch0))]
@@ -136,7 +108,7 @@ class mainWindow(QMainWindow):
         # filtered signal fV is sent to output 1
         # empty signals (0 with correct number of samples) are sent to channels 2,3,4
         empty = self.status.emptyBurst(len(ch0))
-        self.status.sendBurst(fV2,RfV2,fRfV2,sortie)
+        self.status.sendBurst(fV1,empty,empty,empty)
 
 
 if __name__ == "__main__":
