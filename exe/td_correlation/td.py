@@ -41,7 +41,6 @@ class mainWindow(QMainWindow):
 
         # acquisition parameters
         self.currentFrame = 0
-        self.Te = 1.0/10000
 
         if ((port[0]==None)|(port[1]==None)):
             msgBox = QMessageBox()
@@ -50,16 +49,25 @@ class mainWindow(QMainWindow):
             QTimer.singleShot(0, self.close)
             return
 
-        self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.NO_FILTER )  # 10kHz, no anti-aliasing filter
+        #self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.NO_FILTER )  # 10kHz, no anti-aliasing filter
+        self.fe = 2000
+        self.Te = 1.0/self.fe 
+        if self.fe==10000:
+            self.card.connectToPort(port,card_io.FREQUENCY_10KHZ,card_io.FILTER_5KHZ )  # 10kHz, no anti-aliasing filter
+            
+        if self.fe==2000:
+            self.card.connectToPort(port,card_io.FREQUENCY_2KHZ,card_io.FILTER_1KHZ )  # 10kHz, no anti-aliasing filter
+            
+
         self.card.dataReceived.connect(self.dataReceived)    # when a sequence is received, call function seqReceived
         self.card.startAcqui()
 
         # split signal in time window
         # time window length: 1 second
         # time between time window: 0.5 second
+        sigLength_inSec = 0.1
         self.nbDataReceived = 0
-        self.fe = 10000
-        self.seqCutter = seqAcquisition(self.seqReceived,1.0,0.5,self.fe,2)
+        self.seqCutter = seqAcquisition(self.seqReceived,sigLength_inSec,sigLength_inSec/2,self.fe,2)
 
         #####
         # Setup control widget (left of GUI)
@@ -89,7 +97,6 @@ class mainWindow(QMainWindow):
         # Setup curves
         #####
 
-        sigLength_inSec = 1
         self.ch0PlotWidget = plotWidget(sigLength_inSec,1/self.fe,['b'],['channel 1'])
         mainWidget.layout().addWidget(self.ch0PlotWidget)
 
@@ -142,9 +149,9 @@ class mainWindow(QMainWindow):
                     self.previousCorr = corr
                     self.previousCorrIndex = 1
                 else:
-                    corr =  corr + self.previousCorr * self.previousCorrIndex 
+                    corr =  corr + self.previousCorr #* self.previousCorrIndex 
                     self.previousCorrIndex = self.previousCorrIndex + 1
-                    corr = corr / self.previousCorrIndex
+                    corr = corr #/ self.previousCorrIndex
                     self.previousCorr = corr
 
             if self.currentMode==2:
