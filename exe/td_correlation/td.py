@@ -136,13 +136,14 @@ class mainWindow(QMainWindow):
             ####################
             # compute correlation:
             ####################
-
+            #seq[0,:] = np.sin(2*math.pi*100*np.arange(0,0.1*self.fe)/self.fe)
+            #seq[1,:] = seq[0,:] 
             corr = np.correlate(seq[0,:], seq[1,:], mode='full')
             NbDrop = 1
             corr = corr[NbDrop:-NbDrop]
             N = len(seq[0,:])
             corr = np.array([corr[k]*1/(N-math.fabs(k+NbDrop-N)) for k in range(len(corr))])
-            tps = [(k-int(len(corr)*0.5))*self.Te for k in range(len(corr))]
+            tps = [(k-2-int(len(corr)*0.5))*self.Te for k in range(len(corr))]
 
             if self.currentMode==1:
                 if (self.previousCorr is None):

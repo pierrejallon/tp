@@ -53,7 +53,7 @@
       <item row="2" column="0">
        <widget class="QRadioButton" name="radioButton_3">
         <property name="text">
-         <string>Filtré</string>
+         <string>Accu pondéré</string>
         </property>
        </widget>
       </item>
